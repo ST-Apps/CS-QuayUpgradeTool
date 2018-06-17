@@ -22,7 +22,9 @@ namespace QuayUpgradeTool
 
         public static NetTool NetTool;
 
-        private UICheckBox _toolToggleButton;
+        private UIComponent _quayOptionsPanel;
+        private UITabstrip _toolModeBar;
+        private UIButton _toolToggleButton;
 
         private bool _isToolActive;        
         public bool IsToolActive
@@ -51,14 +53,24 @@ namespace QuayUpgradeTool
 
         private void UnsubscribeToUIEvents()
         {
-
+            _toolToggleButton.eventClicked -= ToolToggleButtonOnEventClicked;
         }
 
         private void SubscribeToUIEvents()
-        {
-
+        {            
+            _toolToggleButton.eventClicked += ToolToggleButtonOnEventClicked;
+            _toolModeBar.eventSelectedIndexChanged += ToolModeBarOnEventSelectedIndexChanged;            
         }
 
+        private void ToolModeBarOnEventSelectedIndexChanged(UIComponent component, int value)
+        {
+            DebugUtils.Log($"TabStrip selection changed to {value}");
+        }
+
+        private void ToolToggleButtonOnEventClicked(UIComponent component, UIMouseEventParameter eventparam)
+        {
+            DebugUtils.Log("Enabling upgrade mode for quays.");            
+        }
         #endregion
 
         #region Unity
@@ -79,13 +91,17 @@ namespace QuayUpgradeTool
                 QuayAIDetour.Deploy();
 
                 DebugUtils.Log("Adding UI components");
-                var tsBar = UIUtil.FindComponent<UIComponent>("TSBar", null, UIUtil.FindOptions.NameContains);
-                if (tsBar == null || !tsBar.gameObject.activeInHierarchy) return;
+                _quayOptionsPanel =
+                    UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", null, UIUtil.FindOptions.NameContains);
+                if (_quayOptionsPanel == null) return;                
+
+                _toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
+                if (_toolModeBar == null || !_toolModeBar.gameObject.activeInHierarchy) return;
+
                 var button = UIUtil.FindComponent<UICheckBox>("PRT_Parallel");
                 if (button != null)
                     Destroy(button);
-                _toolToggleButton = UIUtil.CreateCheckBox(tsBar, "Parallel", "Upgrade", false);
-                _toolToggleButton.relativePosition = new Vector3(424, -6);
+                _toolToggleButton = UIUtil.CreateButton(_toolModeBar, "RoadOptionUpgrade", "Upgrade quay");
 
                 SubscribeToUIEvents();
 
@@ -104,6 +120,11 @@ namespace QuayUpgradeTool
             UnsubscribeToUIEvents();
             QuayAIDetour.Revert();
             IsToolActive = false;
+        }
+
+        public void Update()
+        {
+            // _toolToggleButton.isVisible = _toolModeBar.childCount == 3;
         }
 
         #endregion

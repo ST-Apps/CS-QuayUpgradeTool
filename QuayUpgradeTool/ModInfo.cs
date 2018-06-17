@@ -8,7 +8,7 @@ namespace QuayUpgradeTool
     public class ModInfo : IUserMod
     {
         public const string Version = "0.0.1";
-        public const string Branch = "master";
+        public const string Branch = "dev";
 
         public ModInfo()
         {
@@ -25,30 +25,13 @@ namespace QuayUpgradeTool
         }
 
 #if DEBUG
-        public string Name => $"[BETA] Parallel Road Tool {Version} b-{Branch}";
+        public string Name => $"[BETA] Quay Upgrade Tool {Version} b-{Branch}";
 #else
-        public string Name => $"Parallel Road Tool {Version} b-{Branch}";
+        public string Name => $"Quay Upgrade Tool {Version} b-{Branch}";
 #endif
 
         public string Description =>
-            "This mod allows players to easily draw parallel roads in Cities: Skylines. ";
+            "This mod allows players to upgrade quays in Cities: Skylines.";
 
-        public void OnSettingsUI(UIHelperBase helper)
-        {
-            try
-            {
-                var group = helper.AddGroup(Name) as UIHelper;
-                var panel = group.self as UIPanel;
-
-                panel.gameObject.AddComponent<OptionsKeymapping>();
-
-                group.AddSpace(10);
-            }
-            catch (Exception e)
-            {
-                DebugUtils.Log("OnSettingsUI failed");
-                DebugUtils.LogException(e);
-            }
-        }
     }
 }

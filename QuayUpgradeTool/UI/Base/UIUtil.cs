@@ -80,12 +80,10 @@ namespace QuayUpgradeTool.UI.Base
             return null;
         }
 
-        public static UICheckBox CreateCheckBox(UIComponent parent, string spriteName, string toolTip, bool value)
+        public static UIButton CreateButton(UIComponent parent, string spriteName, string toolTip)
         {
-            var checkBox = parent.AddUIComponent<UICheckBox>();
-            checkBox.size = new Vector2(36, 36);
-
-            var button = checkBox.AddUIComponent<UIButton>();
+            var button = parent.AddUIComponent<UIButton>();
+            button.size = new Vector2(36, 36);
             button.name = "PRT_" + spriteName;
             button.atlas = TextureAtlas;
             button.tooltip = toolTip;
@@ -95,34 +93,15 @@ namespace QuayUpgradeTool.UI.Base
             button.hoveredBgSprite = "OptionBaseHovered";
             button.pressedBgSprite = "OptionBasePressed";
             button.disabledBgSprite = "OptionBaseDisabled";
+            button.focusedBgSprite = "OptionsBaseFocused";
 
             button.normalFgSprite = spriteName;
             button.hoveredFgSprite = spriteName + "Hovered";
             button.pressedFgSprite = spriteName + "Pressed";
             button.disabledFgSprite = spriteName + "Disabled";
+            button.focusedFgSprite = spriteName + "Focused";
 
-            checkBox.isChecked = value;
-            if (value)
-            {
-                button.normalBgSprite = "OptionBaseFocused";
-                button.normalFgSprite = spriteName + "Focused";
-            }
-
-            checkBox.eventCheckChanged += (c, s) =>
-            {
-                if (s)
-                {
-                    button.normalBgSprite = "OptionBaseFocused";
-                    button.normalFgSprite = spriteName + "Focused";
-                }
-                else
-                {
-                    button.normalBgSprite = "OptionBase";
-                    button.normalFgSprite = spriteName;
-                }
-            };
-
-            return checkBox;
+            return button;
         }
 
         private static UITextureAtlas LoadResources()
