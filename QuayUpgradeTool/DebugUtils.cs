@@ -6,7 +6,7 @@ namespace QuayUpgradeTool
 {
     public class DebugUtils
     {
-        public const string modPrefix = "[Parallel Road Tool " + ModInfo.Version + "] ";
+        public const string modPrefix = "[Quay Upgrade Tool " + ModInfo.Version + "] ";
 
         public static void Message(string message)
         {

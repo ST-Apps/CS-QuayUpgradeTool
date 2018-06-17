@@ -98,9 +98,6 @@ namespace QuayUpgradeTool
                 _toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
                 if (_toolModeBar == null || !_toolModeBar.gameObject.activeInHierarchy) return;
 
-                var button = UIUtil.FindComponent<UICheckBox>("PRT_Parallel");
-                if (button != null)
-                    Destroy(button);
                 _toolToggleButton = UIUtil.CreateButton(_toolModeBar, "RoadOptionUpgrade", "Upgrade quay");
 
                 SubscribeToUIEvents();

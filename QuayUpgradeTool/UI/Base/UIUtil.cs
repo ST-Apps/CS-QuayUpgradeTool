@@ -84,7 +84,7 @@ namespace QuayUpgradeTool.UI.Base
         {
             var button = parent.AddUIComponent<UIButton>();
             button.size = new Vector2(36, 36);
-            button.name = "PRT_" + spriteName;
+            button.name = "QUT_" + spriteName;
             button.atlas = TextureAtlas;
             button.tooltip = toolTip;
             button.relativePosition = new Vector2(0, 0);
