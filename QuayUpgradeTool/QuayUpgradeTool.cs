@@ -19,16 +19,13 @@ namespace QuayUpgradeTool
         public const string SettingsFileName = "QuayUpgradeTool";
 
         public static QuayUpgradeTool Instance;
-
         public static NetTool NetTool;
 
-        private UIComponent _quayOptionsPanel;
-        private UITabstrip _toolModeBar;
-        private UICheckBox _toolToggleButton;
+        private NetTool.Mode _previousMode;
 
         private UIMainWindow _mainWindow;
 
-        private bool _isToolActive;        
+        private bool _isToolActive;
         public bool IsToolActive
         {
             get => _isToolActive && NetTool.enabled;
@@ -70,7 +67,14 @@ namespace QuayUpgradeTool
             DebugUtils.Log($"Quay upgrade mode is set to {IsToolActive}");
 
             if (IsToolActive)
+            {
+                _previousMode = NetTool.m_mode;
                 NetTool.m_mode = NetTool.Mode.Upgrade;
+            }
+            else
+            {
+                NetTool.m_mode = _previousMode;
+            }
         }
 
         #endregion
@@ -88,7 +92,7 @@ namespace QuayUpgradeTool
                     DebugUtils.Log("Net Tool not found");
                     enabled = false;
                     return;
-                }                
+                }
 
                 QuayAIDetour.Deploy();
 
@@ -102,27 +106,6 @@ namespace QuayUpgradeTool
                 _mainWindow = view.AddUIComponent(typeof(UIMainWindow)) as UIMainWindow;
 
                 SubscribeToUIEvents();
-
-                //DebugUtils.Log("Adding UI components");
-                //_quayOptionsPanel =
-                //    UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", null, UIUtil.FindOptions.NameContains);
-                //if (_quayOptionsPanel == null) return;                
-
-                //_toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
-                //if (_toolModeBar == null || !_toolModeBar.gameObject.activeInHierarchy) return;
-
-                //DebugUtils.Log($"TabStrip got {_toolModeBar.childCount} children.");
-
-                ////var buttonTemplate = _toolModeBar.GetComponentInChildren<UIButton>();
-                ////_toolToggleButton = _toolModeBar.AddTab(string.Empty, buttonTemplate, true);
-                ////_toolToggleButton.SetSprite("RoadOptionUpgrade");
-
-                ////DebugUtils.Log($"TabStrip got {_toolModeBar.childCount} children.");
-
-                //_toolToggleButton = UIUtil.CreateCheckBox(_quayOptionsPanel, "RoadOptionUpgrade", "Upgrade quay", false);
-                //_toolToggleButton.absolutePosition = new Vector3(_toolModeBar.absolutePosition.x + _toolModeBar.size.x - 36, _toolModeBar.absolutePosition.y);
-
-                //SubscribeToUIEvents();
 
                 DebugUtils.Log("Initialized");
             }
@@ -139,11 +122,6 @@ namespace QuayUpgradeTool
             UnsubscribeToUIEvents();
             QuayAIDetour.Revert();
             IsToolActive = false;
-        }
-
-        public void Update()
-        {
-            // _toolToggleButton.isVisible = _toolModeBar.childCount == 3;
         }
 
         #endregion
