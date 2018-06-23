@@ -37,17 +37,17 @@ namespace QuayUpgradeTool
                 if (value)
                 {
                     DebugUtils.Log("Enabling quay upgrade support");
-                    QuayAIDetour.Deploy();
+                    Redirection.RedirectionUtil.Redirect();
                 }
                 else
                 {
                     DebugUtils.Log("Disabling quay upgrade support");
-                    QuayAIDetour.Revert();
+                    Redirection.RedirectionUtil.RevertRedirects();
                 }
 
                 _isToolActive = value;
             }
-        }
+        }        
 
         #region Handlers
 
@@ -119,7 +119,7 @@ namespace QuayUpgradeTool
         public void OnDestroy()
         {
             UnsubscribeToUIEvents();
-            QuayAIDetour.Revert();
+            Redirection.RedirectionUtil.RevertRedirects();
             IsToolActive = false;
         }
 

@@ -22,7 +22,7 @@ namespace QuayUpgradeTool.Redirection
             {
                 return;
             }
-            RedirectionUtil.RevertRedirects(_redirects);
+            RedirectionUtil.RevertRedirects();
             _redirects.Clear();
         }
 

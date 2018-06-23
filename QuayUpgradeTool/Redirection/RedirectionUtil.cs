@@ -28,7 +28,19 @@ namespace QuayUpgradeTool.Redirection
             return redirects;
         }
 
-        public static void RevertRedirects(Dictionary<MethodInfo, RedirectCallsState> redirects)
+        private static Dictionary<MethodInfo, RedirectCallsState> redirects;
+
+        public static void Redirect()
+        {
+            redirects = new Dictionary<MethodInfo, RedirectCallsState>();
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+            {
+                redirects.AddRange(RedirectionUtil.RedirectType(type));
+            }
+        }
+
+
+        public static void RevertRedirects()
         {
             if (redirects == null)
             {
@@ -38,6 +50,7 @@ namespace QuayUpgradeTool.Redirection
             {
                 RedirectionHelper.RevertRedirect(kvp.Key, kvp.Value);
             }
+            redirects.Clear();
         }
 
         public static void AddRange<T>(this ICollection<T> target, IEnumerable<T> source)
