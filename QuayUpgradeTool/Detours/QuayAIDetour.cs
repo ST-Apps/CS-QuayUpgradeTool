@@ -12,7 +12,7 @@ namespace QuayUpgradeTool.Detours
     public struct QuayAIDetour
     {
         #region Detour
-        private static readonly MethodInfo From = typeof(NetManager).GetMethod("CheckBuildPosition",
+        private static readonly MethodInfo From = typeof(QuayAI).GetMethod("CheckBuildPosition",
             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
         private static readonly MethodInfo To =
@@ -23,8 +23,7 @@ namespace QuayUpgradeTool.Detours
 
         public static void Deploy()
         {
-            // TODO: fix detour!
-            return;
+            DebugUtils.Log($"Deploying with from: {From} and to: {To}");
             if (_deployed) return;
             _state = RedirectionHelper.RedirectCalls(From, To);
             _deployed = true;
@@ -40,21 +39,22 @@ namespace QuayUpgradeTool.Detours
 
         #region Utility
 
-        ///// <summary>
-        /////     This methods skips our detour by calling the original method from the game, getting the real ToolError result.
-        ///// </summary>
-        ///// <returns></returns>
-        //private static ToolBase.ToolErrors CheckBuildPositionOriginal(bool test, bool visualize, bool overlay, bool autofix, ref NetTool.ControlPoint startPoint, ref NetTool.ControlPoint middlePoint, ref NetTool.ControlPoint endPoint, out BuildingInfo ownerBuilding, out Vector3 ownerPosition, out Vector3 ownerDirection, out int productionRate)
-        //{
-        //    Revert();
+        /// <summary>
+        ///     This methods skips our detour by calling the original method from the game, getting the real ToolError result.
+        /// </summary>
+        /// <returns></returns>
+        private static ToolBase.ToolErrors CheckBuildPositionOriginal(bool test, bool visualize, bool overlay, bool autofix, ref NetTool.ControlPoint startPoint, ref NetTool.ControlPoint middlePoint, ref NetTool.ControlPoint endPoint, out BuildingInfo ownerBuilding, out Vector3 ownerPosition, out Vector3 ownerDirection, out int productionRate)
+        {
+            Revert();
 
-        //    //var result = NetManager.instance.CreateSegment(out segment, ref randomizer, info, startNode, endNode,
-        //    //    startDirection, endDirection, buildIndex, modifiedIndex, invert);
+            DebugUtils.Log($"CheckBuildPositionOriginal({test}, {visualize}, {overlay}, {autofix}, {startPoint}, {middlePoint}, {endPoint})");
 
-        //    Deploy();
+            var result = Singleton<QuayAI>.instance.CheckBuildPosition(test, visualize, overlay, autofix, ref startPoint, ref middlePoint, ref endPoint, out ownerBuilding, out ownerPosition, out ownerDirection, out productionRate);
 
-        //    return result;
-        //}
+            Deploy();
+
+            return result;
+        }
 
         #endregion
 
@@ -69,8 +69,12 @@ namespace QuayUpgradeTool.Detours
             ownerBuilding = new BuildingInfo();
             ownerDirection = new Vector3();
             ownerPosition = new Vector3();
-            productionRate = 0;
-            return ToolBase.ToolErrors.None;
+
+            var result = CheckBuildPositionOriginal(test, visualize, overlay, autofix, ref startPoint, ref middlePoint, ref endPoint, out ownerBuilding, out ownerPosition, out ownerDirection, out productionRate);
+
+            DebugUtils.Log($"CheckBuildPosition returned {result}, we'll return {result & ~ToolBase.ToolErrors.InvalidShape}");
+
+            return result & ~ToolBase.ToolErrors.InvalidShape;
         }
     }
 }

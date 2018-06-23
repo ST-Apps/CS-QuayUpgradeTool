@@ -20,6 +20,7 @@ namespace QuayUpgradeTool
 
         public static QuayUpgradeTool Instance;
         public static NetTool NetTool;
+        public static QuayAI QuayAI;
 
         private NetTool.Mode _previousMode;
 
@@ -93,8 +94,6 @@ namespace QuayUpgradeTool
                     enabled = false;
                     return;
                 }
-
-                QuayAIDetour.Deploy();
 
                 // Main UI init
                 var view = UIView.GetAView();
