@@ -8,6 +8,21 @@ namespace QuayUpgradeTool.Detours
     [TargetType(typeof(QuayAI))]
     public class QuayAIDetour : NetAI
     {
+        /// <summary>
+        /// <see cref="https://github.com/bloodypenguin/Skylines-QuayAnarchy/blob/master/QuayAnarchy/Detours/QuayAIDetour.cs"/>
+        /// </summary>
+        /// <param name="test"></param>
+        /// <param name="visualize"></param>
+        /// <param name="overlay"></param>
+        /// <param name="autofix"></param>
+        /// <param name="startPoint"></param>
+        /// <param name="middlePoint"></param>
+        /// <param name="endPoint"></param>
+        /// <param name="ownerBuilding"></param>
+        /// <param name="ownerPosition"></param>
+        /// <param name="ownerDirection"></param>
+        /// <param name="productionRate"></param>
+        /// <returns></returns>
         [RedirectMethod]
         public override ToolBase.ToolErrors CheckBuildPosition(bool test, bool visualize, bool overlay, bool autofix, ref NetTool.ControlPoint startPoint, ref NetTool.ControlPoint middlePoint, ref NetTool.ControlPoint endPoint, out BuildingInfo ownerBuilding, out Vector3 ownerPosition, out Vector3 ownerDirection, out int productionRate)
         {
@@ -102,6 +117,7 @@ namespace QuayUpgradeTool.Detours
             }
             //begin mod
             //end mod
+            // HACK - we remove any InvalidShape error to allow updates
             return toolErrors & ~ToolBase.ToolErrors.InvalidShape;
         }
 
