@@ -133,45 +133,9 @@ namespace QuayUpgradeTool
             // base.OnEnable();
         }
 
-        //protected override void OnToolGUI(UnityEngine.Event e)
-        //{
-        //    DebugUtils.Log($"OnToolGUI - {e.type}");
-        //    if (e.type == UnityEngine.EventType.MouseDown)
-        //    {
-        //        if (e.button != 0) return;
-        //        InstanceID hoverInstance = this.m_hoverInstance;
-        //        InstanceID hoverInstance2 = this.m_hoverInstance2;
-        //        if (this.m_selectErrors != ToolBase.ToolErrors.None)
-        //            return;
-        //        InstanceType type = hoverInstance.Type;
-        //        switch (type)
-        //        {
-        //            case InstanceType.NetNode:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteNode(hoverInstance.NetNode));
-        //                break;
-        //            case InstanceType.NetSegment:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteSegment(hoverInstance.NetSegment, hoverInstance2.NetSegment));
-        //                break;
-        //            case InstanceType.TransportLine:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteLine(hoverInstance.TransportLine));
-        //                break;
-        //            case InstanceType.Prop:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteProp(hoverInstance.Prop));
-        //                break;
-        //            case InstanceType.Tree:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteTree(hoverInstance.Tree));
-        //                break;
-        //            case InstanceType.Disaster:
-        //                Singleton<SimulationManager>.instance.AddAction(this.DeleteDisaster(hoverInstance.Disaster));
-        //                break;
-        //            default:
-        //                if (type != InstanceType.Building)
-        //                    break;
-        //                Singleton<SimulationManager>.instance.AddAction(this.TryDeleteBuilding(hoverInstance.Building));
-        //                break;
-        //        }
-        //    }
-        //}
+        #region ToolBase
+
+        private ushort _currentSegment;                
 
         protected override void OnToolLateUpdate()
         {
@@ -187,8 +151,7 @@ namespace QuayUpgradeTool
         }
 
         public override void SimulationStep()
-        {
-            DebugUtils.Log($"SimulationStep!");
+        {            
             base.SimulationStep();
 
             NetInfo info1 = NetTool.m_prefab;
@@ -210,16 +173,41 @@ namespace QuayUpgradeTool
             ToolBase.RaycastOutput output;
             var raycastResult = RayCast(input, out output);
 
-            DebugUtils.Log($"SimulationStep! raycastResult = {raycastResult}");
-
             if (this.m_mouseRayValid && ToolBase.RayCast(input, out output))
             {
                 var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
-
-                if (secondarySegment != 0 || output.m_netSegment != 0)
-                    DebugUtils.Log($"Mouse is on segment {output.m_netSegment} | {secondarySegment}");
+                _currentSegment = output.m_netSegment;
+                if (_currentSegment == 0)
+                    _currentSegment = secondarySegment;                
             }
         }
+
+        protected override void OnToolGUI(Event e)
+        {            
+            if (IsToolActive && e.type == EventType.MouseDown && e.button == 1 && _currentSegment != 0)
+            {
+                // Right click means that we need to invert direction                
+                var segment = NetManager.instance.m_segments.m_buffer[_currentSegment];
+                var startNode = segment.m_startNode;
+                var startDirection = segment.m_startDirection;
+                var endNode = segment.m_endNode;
+                var endDirection = segment.m_endDirection;
+                var infos = segment.Info;
+                var buildIndex = segment.m_buildIndex;
+                var modifiedIndex = segment.m_modifiedIndex;
+                var invert = segment.m_flags.IsFlagSet(NetSegment.Flags.Invert);
+
+                DebugUtils.Log($"Inverting segment with ID {_currentSegment} with invert = {invert}");
+
+                // TODO: check if it's working with invert true or false
+                if (invert) endDirection = -startDirection;
+
+                NetManager.instance.ReleaseSegment(_currentSegment, true);
+                NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, !invert); // TODO: !invert is probably wrong
+            }
+        }
+
+        #endregion
 
         #endregion
     }
