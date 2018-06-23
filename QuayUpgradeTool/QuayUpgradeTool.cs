@@ -24,7 +24,9 @@ namespace QuayUpgradeTool
 
         private UIComponent _quayOptionsPanel;
         private UITabstrip _toolModeBar;
-        private UIButton _toolToggleButton;
+        private UICheckBox _toolToggleButton;
+
+        private UIMainWindow _mainWindow;
 
         private bool _isToolActive;        
         public bool IsToolActive
@@ -53,24 +55,24 @@ namespace QuayUpgradeTool
 
         private void UnsubscribeToUIEvents()
         {
-            _toolToggleButton.eventClicked -= ToolToggleButtonOnEventClicked;
+            _mainWindow.OnParallelToolToggled -= MainWindowOnOnParallelToolToggled;
         }
 
         private void SubscribeToUIEvents()
-        {            
-            _toolToggleButton.eventClicked += ToolToggleButtonOnEventClicked;
-            _toolModeBar.eventSelectedIndexChanged += ToolModeBarOnEventSelectedIndexChanged;            
+        {
+            _mainWindow.OnParallelToolToggled += MainWindowOnOnParallelToolToggled;
         }
 
-        private void ToolModeBarOnEventSelectedIndexChanged(UIComponent component, int value)
+        private void MainWindowOnOnParallelToolToggled(UIComponent component, bool value)
         {
-            DebugUtils.Log($"TabStrip selection changed to {value}");
+            IsToolActive = value;
+
+            DebugUtils.Log($"Quay upgrade mode is set to {IsToolActive}");
+
+            if (IsToolActive)
+                NetTool.m_mode = NetTool.Mode.Upgrade;
         }
 
-        private void ToolToggleButtonOnEventClicked(UIComponent component, UIMouseEventParameter eventparam)
-        {
-            DebugUtils.Log("Enabling upgrade mode for quays.");            
-        }
         #endregion
 
         #region Unity
@@ -90,17 +92,37 @@ namespace QuayUpgradeTool
 
                 QuayAIDetour.Deploy();
 
+                // Main UI init
+                var view = UIView.GetAView();
+                _mainWindow = view.FindUIComponent<UIMainWindow>("QUT_MainWindow");
+                if (_mainWindow != null)
+                    Destroy(_mainWindow);
+
                 DebugUtils.Log("Adding UI components");
-                _quayOptionsPanel =
-                    UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", null, UIUtil.FindOptions.NameContains);
-                if (_quayOptionsPanel == null) return;                
-
-                _toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
-                if (_toolModeBar == null || !_toolModeBar.gameObject.activeInHierarchy) return;
-
-                _toolToggleButton = UIUtil.CreateButton(_toolModeBar, "RoadOptionUpgrade", "Upgrade quay");
+                _mainWindow = view.AddUIComponent(typeof(UIMainWindow)) as UIMainWindow;
 
                 SubscribeToUIEvents();
+
+                //DebugUtils.Log("Adding UI components");
+                //_quayOptionsPanel =
+                //    UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", null, UIUtil.FindOptions.NameContains);
+                //if (_quayOptionsPanel == null) return;                
+
+                //_toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
+                //if (_toolModeBar == null || !_toolModeBar.gameObject.activeInHierarchy) return;
+
+                //DebugUtils.Log($"TabStrip got {_toolModeBar.childCount} children.");
+
+                ////var buttonTemplate = _toolModeBar.GetComponentInChildren<UIButton>();
+                ////_toolToggleButton = _toolModeBar.AddTab(string.Empty, buttonTemplate, true);
+                ////_toolToggleButton.SetSprite("RoadOptionUpgrade");
+
+                ////DebugUtils.Log($"TabStrip got {_toolModeBar.childCount} children.");
+
+                //_toolToggleButton = UIUtil.CreateCheckBox(_quayOptionsPanel, "RoadOptionUpgrade", "Upgrade quay", false);
+                //_toolToggleButton.absolutePosition = new Vector3(_toolModeBar.absolutePosition.x + _toolModeBar.size.x - 36, _toolModeBar.absolutePosition.y);
+
+                //SubscribeToUIEvents();
 
                 DebugUtils.Log("Initialized");
             }

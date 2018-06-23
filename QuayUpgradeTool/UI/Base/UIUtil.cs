@@ -80,6 +80,68 @@ namespace QuayUpgradeTool.UI.Base
             return null;
         }
 
+        public static UICheckBox CreateCheckBox(UIComponent parent, string spriteName, string toolTip, bool value)
+        {
+            var checkBox = parent.AddUIComponent<UICheckBox>();
+            checkBox.size = new Vector2(36, 36);
+
+            var button = checkBox.AddUIComponent<UIButton>();
+            button.name = "QUT__" + spriteName;
+            button.atlas = TextureAtlas;
+            button.tooltip = toolTip;
+            button.relativePosition = new Vector2(0, 0);
+
+            button.normalBgSprite = "OptionBase";
+            button.hoveredBgSprite = "OptionBaseHovered";
+            button.pressedBgSprite = "OptionBasePressed";
+            button.disabledBgSprite = "OptionBaseDisabled";
+
+            button.normalFgSprite = spriteName;
+            button.hoveredFgSprite = spriteName + "Hovered";
+            button.pressedFgSprite = spriteName + "Pressed";
+            button.disabledFgSprite = spriteName + "Disabled";
+
+            checkBox.isChecked = value;
+            if (value)
+            {
+                button.normalBgSprite = "OptionBaseFocused";
+                button.normalFgSprite = spriteName + "Focused";
+            }
+
+            checkBox.eventCheckChanged += (c, s) =>
+            {
+                if (s)
+                {
+                    button.normalBgSprite = "OptionBaseFocused";
+                    button.normalFgSprite = spriteName + "Focused";
+                }
+                else
+                {
+                    button.normalBgSprite = "OptionBase";
+                    button.normalFgSprite = spriteName;
+                }
+            };
+
+            return checkBox;
+        }
+
+        public static void SetSprite(this UIButton button, string spriteName)
+        {
+            // button.atlas = TextureAtlas;
+
+            button.normalBgSprite = "OptionBase";
+            button.hoveredBgSprite = "OptionBaseHovered";
+            button.pressedBgSprite = "OptionBasePressed";
+            button.disabledBgSprite = "OptionBaseDisabled";
+            button.focusedBgSprite = "OptionsBaseFocused";
+
+            button.normalFgSprite = spriteName; // RoadOptionUpgrade
+            button.hoveredFgSprite = spriteName + "Hovered"; // RoadOptionUpgradeHovered
+            button.pressedFgSprite = spriteName + "Pressed";
+            button.disabledFgSprite = spriteName + "Disabled";
+            button.focusedFgSprite = spriteName + "Focused"; // RoadOptionUpgradeFocused
+        }
+
         public static UIButton CreateButton(UIComponent parent, string spriteName, string toolTip)
         {
             var button = parent.AddUIComponent<UIButton>();
