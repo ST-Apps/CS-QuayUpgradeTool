@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using ColossalFramework;
+using ColossalFramework.Math;
 using ColossalFramework.UI;
 using ICities;
 using QuayUpgradeTool.Detours;
@@ -49,6 +50,7 @@ namespace QuayUpgradeTool
                 _isToolActive = value;
             }
         }
+        public bool IsLeftHandTraffic;
 
         #region Handlers
 
@@ -96,6 +98,9 @@ namespace QuayUpgradeTool
                     return;
                 }
 
+                IsLeftHandTraffic = Singleton<SimulationManager>.instance.m_metaData.m_invertTraffic ==
+                                    SimulationMetaData.MetaBool.True;
+
                 // Main UI init
                 var view = UIView.GetAView();
                 _mainWindow = view.FindUIComponent<UIMainWindow>("QUT_MainWindow");
@@ -135,7 +140,7 @@ namespace QuayUpgradeTool
 
         #region ToolBase
 
-        private ushort _currentSegment;                
+        private ushort _currentSegment;
 
         protected override void OnToolLateUpdate()
         {
@@ -151,7 +156,7 @@ namespace QuayUpgradeTool
         }
 
         public override void SimulationStep()
-        {            
+        {
             base.SimulationStep();
 
             NetInfo info1 = NetTool.m_prefab;
@@ -178,16 +183,17 @@ namespace QuayUpgradeTool
                 var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
                 _currentSegment = output.m_netSegment;
                 if (_currentSegment == 0)
-                    _currentSegment = secondarySegment;                
+                    _currentSegment = secondarySegment;
             }
         }
 
         protected override void OnToolGUI(Event e)
-        {            
+        {
             if (IsToolActive && e.type == EventType.MouseDown && e.button == 1 && _currentSegment != 0)
             {
                 // Right click means that we need to invert direction                
                 var segment = NetManager.instance.m_segments.m_buffer[_currentSegment];
+                var invert = segment.m_flags.IsFlagSet(NetSegment.Flags.Invert);
                 var startNode = segment.m_startNode;
                 var startDirection = segment.m_startDirection;
                 var endNode = segment.m_endNode;
@@ -195,16 +201,98 @@ namespace QuayUpgradeTool
                 var infos = segment.Info;
                 var buildIndex = segment.m_buildIndex;
                 var modifiedIndex = segment.m_modifiedIndex;
-                var invert = segment.m_flags.IsFlagSet(NetSegment.Flags.Invert);
 
-                DebugUtils.Log($"Inverting segment with ID {_currentSegment} with invert = {invert}");
+                //segment.m_flags.SetFlags(NetSegment.Flags.Invert, !invert);
+                //NetManager.instance.UpdateSegmentFlags(_currentSegment);
 
-                // TODO: check if it's working with invert true or false
-                if (invert) endDirection = -startDirection;
+                //segment.m_startNode = endNode;
+                //segment.m_endNode = startNode;
+                //NetManager.instance.UpdateSegment(_currentSegment);
+                //NetManager.instance.m_updatedSegments
 
                 NetManager.instance.ReleaseSegment(_currentSegment, true);
-                NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, !invert); // TODO: !invert is probably wrong
+                // CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, invert);
+
+                NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, 
+                    infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, !invert);
+
+                //NetManager.instance.CreateSegment(out segmentId, ref randomizer, info, endNode,
+                //        startNode, startDirection, endDirection,
+                //        buildIndex, modifiedIndex, false)
+
+                //Vector3 tempStartDirection;
+                //Vector3 tempEndDirection;
+                //if (startDirection == -endDirection)
+                //{
+                //    // Straight segment, we invert both directions
+                //    tempStartDirection = -startDirection;
+                //    tempEndDirection = -endDirection;
+                //}
+                //else
+                //{
+                //    // Curve, we need to swap start and end direction                        
+                //    tempStartDirection = endDirection;
+                //    tempEndDirection = startDirection;
+                //}
+
+                //DebugUtils.Log($"Inverting segment with ID {_currentSegment} with invert = {invert} and properties: [startNode: {startNode}, startDirection: {tempStartDirection}, endNode: {endNode}, endDirection: {tempEndDirection}]");
+
+                //NetManager.instance.ReleaseSegment(_currentSegment, true);
+                //NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, endNode, startNode, tempStartDirection, tempEndDirection, buildIndex, modifiedIndex, false);
             }
+        }
+
+        private bool CreateSegment(out ushort segment, ref Randomizer randomizer, NetInfo info, ushort startNode,
+            ushort endNode, Vector3 startDirection, Vector3 endDirection, uint buildIndex, uint modifiedIndex,
+            bool invert)
+        {
+            bool result;
+
+            // Left-hand drive means that any condition must be reversed
+            if (IsLeftHandTraffic)
+            {
+                invert = !invert;
+            }
+
+            // Get original nodes to clone them
+            var startNetNode = NetManager.instance.m_nodes.m_buffer[startNode];
+            var endNetNode = NetManager.instance.m_nodes.m_buffer[endNode];
+
+            DebugUtils.Log($"Invert: {invert} | StartDirection: {startDirection} | EndDirection: {endDirection}");
+
+            if (invert)
+            {
+                result = NetManager.instance.CreateSegment(out segment, ref randomizer, info, endNode,
+                    startNode, startDirection, endDirection,
+                    buildIndex, modifiedIndex, false);
+            }
+            else
+            {
+                Vector3 tempStartDirection;
+                Vector3 tempEndDirection;
+                if (startDirection == -endDirection)
+                {
+                    DebugUtils.Log($"invert -> startDirection == -endDirection");
+                    // Straight segment, we invert both directions
+                    tempStartDirection = -startDirection;
+                    tempEndDirection = -endDirection;
+                }
+                else
+                {
+                    DebugUtils.Log($"invert -> else");
+                    // Curve, we need to swap start and end direction                        
+                    tempStartDirection = endDirection;
+                    tempEndDirection = startDirection;
+                }
+
+                // Create the segment between the two cloned nodes, inverting start and end node
+                result = NetManager.instance.CreateSegment(out segment, ref randomizer, info, endNode,
+                    startNode,
+                    tempStartDirection, tempEndDirection,
+                    Singleton<SimulationManager>.instance.m_currentBuildIndex + 1,
+                    Singleton<SimulationManager>.instance.m_currentBuildIndex, !invert);
+            }
+            return result;
         }
 
         #endregion

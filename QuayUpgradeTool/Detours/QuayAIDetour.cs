@@ -27,6 +27,7 @@ namespace QuayUpgradeTool.Detours
         public override ToolBase.ToolErrors CheckBuildPosition(bool test, bool visualize, bool overlay, bool autofix, ref NetTool.ControlPoint startPoint, ref NetTool.ControlPoint middlePoint, ref NetTool.ControlPoint endPoint, out BuildingInfo ownerBuilding, out Vector3 ownerPosition, out Vector3 ownerDirection, out int productionRate)
         {
             ToolBase.ToolErrors toolErrors = base.CheckBuildPosition(test, visualize, overlay, autofix, ref startPoint, ref middlePoint, ref endPoint, out ownerBuilding, out ownerPosition, out ownerDirection, out productionRate);
+            // TODO: rimuovere fino alla return
             NetManager instance1 = Singleton<NetManager>.instance;
             TerrainManager instance2 = Singleton<TerrainManager>.instance;
             if ((int)startPoint.m_node != 0)

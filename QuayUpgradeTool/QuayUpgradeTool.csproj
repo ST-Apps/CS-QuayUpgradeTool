@@ -65,6 +65,7 @@
     <Compile Include="ResourceLoader.cs" />
     <Compile Include="UI\Base\UIUtil.cs" />
     <Compile Include="UI\UIMainWindow.cs" />
+    <Compile Include="Wrappers\NetToolWrapper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
