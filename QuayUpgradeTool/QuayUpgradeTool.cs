@@ -140,7 +140,7 @@ namespace QuayUpgradeTool
 
         #region ToolBase
 
-        private ushort _currentSegment;
+        private ushort _currentSegmentId;
 
         protected override void OnToolLateUpdate()
         {
@@ -181,18 +181,18 @@ namespace QuayUpgradeTool
             if (this.m_mouseRayValid && ToolBase.RayCast(input, out output))
             {
                 var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
-                _currentSegment = output.m_netSegment;
-                if (_currentSegment == 0)
-                    _currentSegment = secondarySegment;
+                _currentSegmentId = output.m_netSegment;
+                if (_currentSegmentId == 0)
+                    _currentSegmentId = secondarySegment;
             }
         }
 
         protected override void OnToolGUI(Event e)
         {
-            if (IsToolActive && e.type == EventType.MouseDown && e.button == 1 && _currentSegment != 0)
+            if (IsToolActive && e.type == EventType.MouseDown && e.button == 1 && _currentSegmentId != 0)
             {
                 // Right click means that we need to invert direction                
-                var segment = NetManager.instance.m_segments.m_buffer[_currentSegment];
+                var segment = NetManager.instance.m_segments.m_buffer[_currentSegmentId];
                 var invert = segment.m_flags.IsFlagSet(NetSegment.Flags.Invert);
                 var startNode = segment.m_startNode;
                 var startDirection = segment.m_startDirection;
@@ -202,43 +202,31 @@ namespace QuayUpgradeTool
                 var buildIndex = segment.m_buildIndex;
                 var modifiedIndex = segment.m_modifiedIndex;
 
-                //segment.m_flags.SetFlags(NetSegment.Flags.Invert, !invert);
-                //NetManager.instance.UpdateSegmentFlags(_currentSegment);
+                if (!invert)
+                {
+                    // If invert is false, we only need to set it to true to reverse segment's direction ...
+                    NetManager.instance.m_segments.m_buffer[_currentSegmentId].m_flags |= NetSegment.Flags.Invert;
+                    NetManager.instance.UpdateSegment(_currentSegmentId);
 
-                //segment.m_startNode = endNode;
-                //segment.m_endNode = startNode;
-                //NetManager.instance.UpdateSegment(_currentSegment);
-                //NetManager.instance.m_updatedSegments
+                    // DebugUtils.Log($"Inverted {_currentSegmentId} with properties: [invert: {invert}, startNode: {startNode}, startDirection: {startDirection}, endNode: {endNode}, endDirection: {endDirection}]");
+                    DebugUtils.Log(JsonUtility.ToJson(segment));
+                } else
+                {
+                    // ...however it doesn't work the other way around. If invert is true and we set it to false, it'll still be true.
+                    // This means that we're forced to redraw the segment from scratch, reversing directions.
+                    NetManager.instance.ReleaseSegment(_currentSegmentId, true);
+                    NetManager.instance.CreateSegment(out ushort newSegmentId, ref Singleton<SimulationManager>.instance.m_randomizer, 
+                        infos, startNode, endNode, endDirection, startDirection, buildIndex, modifiedIndex, invert);
 
-                NetManager.instance.ReleaseSegment(_currentSegment, true);
-                // CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, invert);
+                    var newSegment = NetManager.instance.m_segments.m_buffer[newSegmentId];
 
-                NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, 
-                    infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, !invert);
+                    newSegment.m_startDirection = startDirection;
+                    newSegment.m_endDirection = endDirection;
+                    NetManager.instance.UpdateSegment(newSegmentId);
 
-                //NetManager.instance.CreateSegment(out segmentId, ref randomizer, info, endNode,
-                //        startNode, startDirection, endDirection,
-                //        buildIndex, modifiedIndex, false)
-
-                //Vector3 tempStartDirection;
-                //Vector3 tempEndDirection;
-                //if (startDirection == -endDirection)
-                //{
-                //    // Straight segment, we invert both directions
-                //    tempStartDirection = -startDirection;
-                //    tempEndDirection = -endDirection;
-                //}
-                //else
-                //{
-                //    // Curve, we need to swap start and end direction                        
-                //    tempStartDirection = endDirection;
-                //    tempEndDirection = startDirection;
-                //}
-
-                //DebugUtils.Log($"Inverting segment with ID {_currentSegment} with invert = {invert} and properties: [startNode: {startNode}, startDirection: {tempStartDirection}, endNode: {endNode}, endDirection: {tempEndDirection}]");
-
-                //NetManager.instance.ReleaseSegment(_currentSegment, true);
-                //NetManager.instance.CreateSegment(out ushort segmentId, ref Singleton<SimulationManager>.instance.m_randomizer, infos, endNode, startNode, tempStartDirection, tempEndDirection, buildIndex, modifiedIndex, false);
+                    // DebugUtils.Log($"Inverted from {_currentSegmentId} to {newSegmentId} with properties: [invert: {invert} --> {newSegment.m_flags.IsFlagSet(NetSegment.Flags.Invert)}, startNode: {startNode} --> {newSegment.m_startNode}, startDirection: {startDirection}  --> {newSegment.m_startDirection}, endNode: {endNode}  --> {newSegment.m_endNode}, endDirection: {endDirection} --> {newSegment.m_endDirection}]");
+                    DebugUtils.Log(JsonUtility.ToJson(newSegment));
+                }                
             }
         }
 
