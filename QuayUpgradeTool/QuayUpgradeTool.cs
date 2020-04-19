@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using ColossalFramework;
-using ColossalFramework.Math;
 using ColossalFramework.UI;
 using ICities;
-using QuayUpgradeTool.Detours;
+using QuayUpgradeTool.Redirection;
 using QuayUpgradeTool.UI;
-using QuayUpgradeTool.UI.Base;
 using UnityEngine;
 
 namespace QuayUpgradeTool
@@ -24,11 +21,13 @@ namespace QuayUpgradeTool
         public static NetTool NetTool;
         public static QuayAI QuayAI;
 
-        private NetTool.Mode _previousMode;
+        private bool _isToolActive;
 
         private UIMainWindow _mainWindow;
 
-        private bool _isToolActive;
+        private NetTool.Mode _previousMode;
+        public bool IsLeftHandTraffic;
+
         public bool IsToolActive
         {
             get => _isToolActive && NetTool.enabled;
@@ -39,18 +38,17 @@ namespace QuayUpgradeTool
                 if (value)
                 {
                     DebugUtils.Log("Enabling quay upgrade support");
-                    Redirection.RedirectionUtil.Redirect();
+                    RedirectionUtil.Redirect();
                 }
                 else
                 {
                     DebugUtils.Log("Disabling quay upgrade support");
-                    Redirection.RedirectionUtil.RevertRedirects();
+                    RedirectionUtil.RevertRedirects();
                 }
 
                 _isToolActive = value;
             }
         }
-        public bool IsLeftHandTraffic;
 
         #region Handlers
 
@@ -125,7 +123,7 @@ namespace QuayUpgradeTool
         protected override void OnDestroy()
         {
             UnsubscribeToUIEvents();
-            Redirection.RedirectionUtil.RevertRedirects();
+            RedirectionUtil.RevertRedirects();
             IsToolActive = false;
         }
 
@@ -147,9 +145,9 @@ namespace QuayUpgradeTool
             DebugUtils.Log("OnToolLateUpdate");
             base.OnToolLateUpdate();
 
-            this.m_mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-            this.m_mouseRayLength = Camera.main.farClipPlane;
-            this.m_mouseRayValid = /*!this.m_toolController.IsInsideUI &&*/ Cursor.visible;
+            m_mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+            m_mouseRayLength = Camera.main.farClipPlane;
+            m_mouseRayValid = /*!this.m_toolController.IsInsideUI &&*/ Cursor.visible;
 
             if (IsToolActive)
                 SimulationStep();
@@ -159,26 +157,32 @@ namespace QuayUpgradeTool
         {
             base.SimulationStep();
 
-            NetInfo info1 = NetTool.m_prefab;
+            var info1 = NetTool.m_prefab;
             if (info1 == null)
                 return;
 
-            NetManager instance = Singleton<NetManager>.instance;
-            ToolBase.RaycastInput input = new ToolBase.RaycastInput(this.m_mouseRay, this.m_mouseRayLength);
-            input.m_buildObject = (PrefabInfo)info1;
-            input.m_netService = new ToolBase.RaycastService(info1.m_class.m_service, info1.m_class.m_subService, info1.m_class.m_layer);
-            input.m_ignoreTerrain = true;
-            input.m_ignoreNodeFlags = NetNode.Flags.All;
-            input.m_ignoreSegmentFlags = NetSegment.Flags.Untouchable;
-            if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Transport || Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Traffic || (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.TrafficRoutes || Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Tours))
+            var instance = Singleton<NetManager>.instance;
+            var input = new RaycastInput(m_mouseRay, m_mouseRayLength)
+            {
+                m_buildObject = info1,
+                m_netService = new RaycastService(info1.m_class.m_service, info1.m_class.m_subService,
+                    info1.m_class.m_layer),
+                m_ignoreTerrain = true,
+                m_ignoreNodeFlags = NetNode.Flags.All,
+                m_ignoreSegmentFlags = NetSegment.Flags.Untouchable
+            };
+            if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Transport ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Traffic ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.TrafficRoutes ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Tours)
                 input.m_netService.m_itemLayers |= ItemClass.Layer.MetroTunnels;
-            else if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Underground && Singleton<InfoManager>.instance.CurrentSubMode == InfoManager.SubInfoMode.Default)
+            else if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Underground &&
+                     Singleton<InfoManager>.instance.CurrentSubMode == InfoManager.SubInfoMode.Default)
                 input.m_netService.m_itemLayers |= ItemClass.Layer.MetroTunnels;
 
-            ToolBase.RaycastOutput output;
-            var raycastResult = RayCast(input, out output);
+            var raycastResult = RayCast(input, out var output);
 
-            if (this.m_mouseRayValid && ToolBase.RayCast(input, out output))
+            if (m_mouseRayValid && RayCast(input, out output))
             {
                 var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
                 _currentSegmentId = output.m_netSegment;
@@ -210,77 +214,26 @@ namespace QuayUpgradeTool
 
                     // DebugUtils.Log($"Inverted {_currentSegmentId} with properties: [invert: {invert}, startNode: {startNode}, startDirection: {startDirection}, endNode: {endNode}, endDirection: {endDirection}]");
                     DebugUtils.Log(JsonUtility.ToJson(segment));
-                } else
+                }
+                else
                 {
                     // ...however it doesn't work the other way around. If invert is true and we set it to false, it'll still be true.
                     // This means that we're forced to redraw the segment from scratch, reversing directions.
                     NetManager.instance.ReleaseSegment(_currentSegmentId, true);
-                    NetManager.instance.CreateSegment(out ushort newSegmentId, ref Singleton<SimulationManager>.instance.m_randomizer, 
-                        infos, startNode, endNode, endDirection, startDirection, buildIndex, modifiedIndex, invert);
+                    NetManager.instance.CreateSegment(out var newSegmentId,
+                        ref Singleton<SimulationManager>.instance.m_randomizer,
+                        infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, true);
 
                     var newSegment = NetManager.instance.m_segments.m_buffer[newSegmentId];
-
                     newSegment.m_startDirection = startDirection;
                     newSegment.m_endDirection = endDirection;
+
                     NetManager.instance.UpdateSegment(newSegmentId);
 
                     // DebugUtils.Log($"Inverted from {_currentSegmentId} to {newSegmentId} with properties: [invert: {invert} --> {newSegment.m_flags.IsFlagSet(NetSegment.Flags.Invert)}, startNode: {startNode} --> {newSegment.m_startNode}, startDirection: {startDirection}  --> {newSegment.m_startDirection}, endNode: {endNode}  --> {newSegment.m_endNode}, endDirection: {endDirection} --> {newSegment.m_endDirection}]");
                     DebugUtils.Log(JsonUtility.ToJson(newSegment));
-                }                
-            }
-        }
-
-        private bool CreateSegment(out ushort segment, ref Randomizer randomizer, NetInfo info, ushort startNode,
-            ushort endNode, Vector3 startDirection, Vector3 endDirection, uint buildIndex, uint modifiedIndex,
-            bool invert)
-        {
-            bool result;
-
-            // Left-hand drive means that any condition must be reversed
-            if (IsLeftHandTraffic)
-            {
-                invert = !invert;
-            }
-
-            // Get original nodes to clone them
-            var startNetNode = NetManager.instance.m_nodes.m_buffer[startNode];
-            var endNetNode = NetManager.instance.m_nodes.m_buffer[endNode];
-
-            DebugUtils.Log($"Invert: {invert} | StartDirection: {startDirection} | EndDirection: {endDirection}");
-
-            if (invert)
-            {
-                result = NetManager.instance.CreateSegment(out segment, ref randomizer, info, endNode,
-                    startNode, startDirection, endDirection,
-                    buildIndex, modifiedIndex, false);
-            }
-            else
-            {
-                Vector3 tempStartDirection;
-                Vector3 tempEndDirection;
-                if (startDirection == -endDirection)
-                {
-                    DebugUtils.Log($"invert -> startDirection == -endDirection");
-                    // Straight segment, we invert both directions
-                    tempStartDirection = -startDirection;
-                    tempEndDirection = -endDirection;
                 }
-                else
-                {
-                    DebugUtils.Log($"invert -> else");
-                    // Curve, we need to swap start and end direction                        
-                    tempStartDirection = endDirection;
-                    tempEndDirection = startDirection;
-                }
-
-                // Create the segment between the two cloned nodes, inverting start and end node
-                result = NetManager.instance.CreateSegment(out segment, ref randomizer, info, endNode,
-                    startNode,
-                    tempStartDirection, tempEndDirection,
-                    Singleton<SimulationManager>.instance.m_currentBuildIndex + 1,
-                    Singleton<SimulationManager>.instance.m_currentBuildIndex, !invert);
             }
-            return result;
         }
 
         #endregion
