@@ -4,9 +4,9 @@ namespace QuayUpgradeTool
 {
     public class ModInfo : IUserMod
     {
-        private const string Version = "0.0.1";
+        private const string Version = "0.1.0";
 #if DEBUG
-        private const string Branch = "dev";
+        private const string Branch = "rewrite-ui";
         public static readonly string ModName = $"[BETA] Quay Upgrade Tool {Version}-{Branch}";
 #else
         public static readonly string ModName = $"Parallel Road Tool {Version}";
