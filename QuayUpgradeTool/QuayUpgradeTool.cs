@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Security.Cryptography;
 using ColossalFramework;
 using ColossalFramework.UI;
 using CSUtil.Commons;
-using QuayUpgradeTool.UI;
+using QuayUpgradeTool.Redirection;
 using QuayUpgradeTool.UI.Base;
 using UnityEngine;
 
@@ -13,6 +12,14 @@ namespace QuayUpgradeTool
 {
     public class QuayUpgradeTool : ToolBase
     {
+        private readonly object _lock = new object();
+        private bool _isBeautificationOn;
+        private UIComponent _quayOptionsPanel;
+        private UITabstrip _toolModeBar;
+        private UIButton _toolToggleButton;
+
+        #region Unity
+
         public void Start()
         {
             try
@@ -27,9 +34,6 @@ namespace QuayUpgradeTool
 
                 Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Loading version: {ModInfo.ModName}");
                 Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Adding UI components");
-
-                // Main UI init
-                // AddQuayUpgradeButton();
 
                 var tsBar = UIUtil.FindComponent<UISlicedSprite>("TSBar", null, UIUtil.FindOptions.NameContains);
                 if (tsBar == null)
@@ -49,7 +53,7 @@ namespace QuayUpgradeTool
                 _toolToggleButton = _toolModeBar.AddTab("Upgrade", false);
                 UIUtil.SetTextures(_toolToggleButton, "RoadOptionUpgrade", "Quay Upgrade Tool");
 
-                // _toolToggleButton.eventVisibilityChanged += _toolToggleButton_eventVisibilityChanged;
+                RedirectionUtil.Redirect();
 
                 Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Loaded");
             }
@@ -62,111 +66,166 @@ namespace QuayUpgradeTool
             }
         }
 
-        private void _toolToggleButton_eventVisibilityChanged(UIComponent component, bool value)
+        protected override void OnDestroy()
         {
-            Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(_toolToggleButton_eventVisibilityChanged)}] Visibility changed {component.parent}");
+            RedirectionUtil.RevertRedirects();
+
+            _toolModeBar.eventSelectedIndexChanged -= _toolModeBar_eventSelectedIndexChanged;
+            _isBeautificationOn = false;
+
+            DestroyImmediate(_quayOptionsPanel);
+            DestroyImmediate(_toolModeBar);
+            DestroyImmediate(_toolToggleButton);
+
+            _quayOptionsPanel = null;
+            _toolModeBar = null;
+            _toolToggleButton = null;
         }
 
-        private UIButton _toolToggleButton;
-        private UIComponent _quayOptionsPanel;
-        private UITabstrip _toolModeBar;
-        private bool _isBeautificationOn;
-        private readonly object _lock = new object();
-
-        //private void AddQuayUpgradeButton(bool beautificationPanel = false)
-        //{
-        //    // Add main tool button to road options panel
-        //    if (false && _toolToggleButton != null) return;
-
-        //    if (!beautificationPanel)
-        //    {
-        //        var tsBar = UIUtil.FindComponent<UISlicedSprite>("TSBar", null, UIUtil.FindOptions.NameContains);
-        //        if (tsBar == null)
-        //        {
-        //            Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(AddQuayUpgradeButton)}] Couldn't find TSBar, aborting...");
-        //            return;
-        //        }
-
-        //        var optionsBar = UIUtil.FindComponent<UIPanel>("OptionsBar", tsBar, UIUtil.FindOptions.NameContains);
-        //        var optionsPanel = optionsBar.Find<UIPanel>("QuaysOptionPanel");
-        //        var tabStrip = optionsPanel.Find<UITabstrip>("ToolMode");
-
-        //        _quayOptionsPanel = UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", tsBar, UIUtil.FindOptions.NameContains);
-        //        if (_quayOptionsPanel == null)
-        //        {
-        //            Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(AddQuayUpgradeButton)}] Couldn't find QuaysOptionPanel, aborting...");
-        //            return;
-        //        }
-        //    }
-
-        //    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(AddQuayUpgradeButton)}] Found {nameof(_quayOptionsPanel)} with name {_quayOptionsPanel.name}");
-
-        //    _toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", _quayOptionsPanel, UIUtil.FindOptions.NameContains);
-        //    if (_toolModeBar == null)
-        //    {
-        //        Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(AddQuayUpgradeButton)}] Couldn't find ToolMode, aborting...");
-        //        return;
-        //    }
-
-        //    var quayTemplate = UITemplateManager.GetAsGameObject("QuaysOptionPanel");
-        //    var button = quayTemplate.AddComponent<UIButton>();
-
-        //    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(AddQuayUpgradeButton)}] Found {nameof(_toolModeBar)} with name {_toolModeBar.name}");
-
-        //    //var button = UIUtil.FindComponent<UIButton>("QUT_Parallel");
-        //    //if (button != null)
-        //    //    Destroy(button);
-
-        //    // _toolToggleButton = UIUtil.CreateButton(_toolModeBar, "RoadOptionUpgrade", "Quay Upgrade Tool");
-        //    // _toolToggleButton.isVisible = false;
-        //    //_toolToggleButton.absolutePosition = new Vector3(_toolModeBar.absolutePosition.x + _toolModeBar.size.x - 36,
-        //    //    _toolModeBar.absolutePosition.y);
-        //    // _toolModeBar.AddTab("Quay Upgrade Tool", _toolToggleButton, false);
-
-        //    // _toolModeBar.eventSelectedIndexChanged += _toolModeBar_eventSelectedIndexChanged;
-        //}
-
-        private void _toolModeBar_eventSelectedIndexChanged(UIComponent component, int value)
+        protected void Update()
         {
-            Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(_toolModeBar_eventSelectedIndexChanged)}] Selected index {value}");
-        }
-
-        protected override void OnToolLateUpdate()
-        {
-            if (_isBeautificationOn) return;
+            if (_isBeautificationOn || !(ToolsModifierControl.toolController.CurrentTool is NetTool)) return;
 
             // Check if a new panel was added
-            var optionsPanel = UIUtil.FindComponent<UIPanel>("QuaysOptionPanel(BeautificationPanel)", null, UIUtil.FindOptions.NameContains);
+            var optionsPanel = UIUtil.FindComponent<UIPanel>("QuaysOptionPanel(BeautificationPanel)", null,
+                UIUtil.FindOptions.NameContains);
             if (optionsPanel == null) return;
 
             lock (_lock)
             {
                 if (_isBeautificationOn) return;
 
-                Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolLateUpdate)}] Updating options panel with the new one...");
+                Log.Info(
+                    $"[{nameof(QuayUpgradeTool)}.{nameof(OnToolLateUpdate)}] Updating options panel with the new one...");
 
                 // Replace the previous one and rebuild the UI
                 _quayOptionsPanel = optionsPanel;
                 _toolModeBar = _quayOptionsPanel.Find<UITabstrip>("ToolMode");
                 _toolModeBar.eventSelectedIndexChanged += _toolModeBar_eventSelectedIndexChanged;
 
-                //Destroy(_toolToggleButton);
-                //_toolToggleButton = null;
-
                 _isBeautificationOn = true;
             }
         }
 
-        //protected override void OnToolLateUpdate()
-        //{
-        //    var tsBar = UIUtil.FindComponent<UIComponent>("TSBar", null, UIUtil.FindOptions.NameContains);
-        //    var quayOptionsPanel = UIUtil.FindComponent<UIComponent>("QuaysOptionPanel", tsBar, UIUtil.FindOptions.NameContains);
-        //    var toolModeBar = UIUtil.FindComponent<UITabstrip>("ToolMode", quayOptionsPanel, UIUtil.FindOptions.NameContains);
-        //    var tmb = (UITabstrip)quayOptionsPanel.components.First(c => c is UITabstrip);
+        #endregion
 
-        //    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolLateUpdate)}] {_toolModeBar.selectedIndex} | {tmb.selectedIndex} | {toolModeBar.selectedIndex}");
-        //    // Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolLateUpdate)}] {_toolModeBar.Equals(toolModeBar)} | {_toolModeBar.Equals(tmb)} | {toolModeBar.Equals(tmb)}");
-        //}
+        #region Handlers
 
+        private void _toolModeBar_eventSelectedIndexChanged(UIComponent component, int value)
+        {
+            Log.Info(
+                $"[{nameof(QuayUpgradeTool)}.{nameof(_toolModeBar_eventSelectedIndexChanged)}] Selected index {value}");
+        }
+
+        #endregion
+
+        #region ToolBase
+
+        private Ray m_mouseRay;
+        private float m_mouseRayLength;
+        private bool m_mouseRayValid;
+
+        private ushort _currentSegmentId;
+
+        protected override void OnToolLateUpdate()
+        {
+            base.OnToolLateUpdate();
+
+            m_mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+            m_mouseRayLength = Camera.main.farClipPlane;
+            m_mouseRayValid = /*!this.m_toolController.IsInsideUI &&*/ Cursor.visible;
+
+            if (ToolsModifierControl.toolController.CurrentTool is NetTool)
+                SimulationStep();
+        }
+
+        public override void SimulationStep()
+        {
+            base.SimulationStep();
+
+            var info1 = ToolsModifierControl.GetTool<NetTool>().m_prefab;
+            if (info1 == null)
+                return;
+
+            var input = new RaycastInput(m_mouseRay, m_mouseRayLength)
+            {
+                m_buildObject = info1,
+                m_netService = new RaycastService(info1.m_class.m_service, info1.m_class.m_subService, info1.m_class.m_layer),
+                m_ignoreTerrain = true,
+                m_ignoreNodeFlags = NetNode.Flags.All,
+                m_ignoreSegmentFlags = NetSegment.Flags.Untouchable
+            };
+            switch (Singleton<InfoManager>.instance.CurrentMode)
+            {
+                case InfoManager.InfoMode.Transport:
+                case InfoManager.InfoMode.Traffic:
+                case InfoManager.InfoMode.TrafficRoutes:
+                case InfoManager.InfoMode.Tours:
+                case InfoManager.InfoMode.Underground 
+                    when Singleton<InfoManager>.instance.CurrentSubMode == InfoManager.SubInfoMode.Default: 
+                    
+                    input.m_netService.m_itemLayers |= ItemClass.Layer.MetroTunnels;
+                    break;
+            }
+
+            //RayCast(input, out var output);
+            if (!m_mouseRayValid || !RayCast(input, out var output)) return;
+
+            var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
+            _currentSegmentId = output.m_netSegment;
+
+            if (_currentSegmentId == 0)
+                _currentSegmentId = secondarySegment;
+        }
+
+        protected override void OnToolGUI(Event e)
+        {
+            if (!(ToolsModifierControl.toolController.CurrentTool is NetTool) || e.type != EventType.MouseDown ||
+                e.button != 1 || _currentSegmentId == 0) return;
+
+            try
+            {
+                // Right click means that we need to invert direction                
+                var segment = NetManager.instance.m_segments.m_buffer[_currentSegmentId];
+                var invert = segment.m_flags.IsFlagSet(NetSegment.Flags.Invert);
+                var startNode = segment.m_startNode;
+                var startDirection = segment.m_startDirection;
+                var endNode = segment.m_endNode;
+                var endDirection = segment.m_endDirection;
+                var infos = segment.Info;
+                var buildIndex = segment.m_buildIndex;
+                var modifiedIndex = segment.m_modifiedIndex;
+
+                if (!invert)
+                {
+                    // If invert is false, we only need to set it to true to reverse segment's direction ...
+                    NetManager.instance.m_segments.m_buffer[_currentSegmentId].m_flags |= NetSegment.Flags.Invert;
+                    NetManager.instance.UpdateSegment(_currentSegmentId);
+                }
+                else
+                {
+                    // ...however it doesn't work the other way around. If invert is true and we set it to false, it'll still be true.
+                    // This means that we're forced to redraw the segment from scratch, reversing directions.
+                    NetManager.instance.ReleaseSegment(_currentSegmentId, true);
+                    NetManager.instance.CreateSegment(out var newSegmentId,
+                        ref Singleton<SimulationManager>.instance.m_randomizer,
+                        infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, true);
+
+                    NetManager.instance.m_segments.m_buffer[newSegmentId].m_startDirection = startDirection;
+                    NetManager.instance.m_segments.m_buffer[newSegmentId].m_endDirection = endDirection;
+
+                    NetManager.instance.UpdateSegment(newSegmentId);
+                }
+
+                Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolGUI)}] Inverted segment {_currentSegmentId} ({nameof(invert)} is {invert})");
+            }
+            catch (Exception ex)
+            {
+                Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolGUI)}] Failed for segment {_currentSegmentId}");
+                Log.Exception(ex);
+            }
+        }
+
+        #endregion
     }
 }

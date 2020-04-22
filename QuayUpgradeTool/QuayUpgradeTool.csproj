@@ -53,7 +53,6 @@
     <Compile Include="Detours\QuayAIDetour.cs" />
     <Compile Include="Loader.cs" />
     <Compile Include="QuayUpgradeTool.cs" />
-    <Compile Include="QuayUpgradeTool_old.cs" />
     <Compile Include="ModInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Redirection\RedirectionHelper.cs" />
@@ -65,7 +64,6 @@
     <Compile Include="Redirection\Tuple.cs" />
     <Compile Include="ResourceLoader.cs" />
     <Compile Include="UI\Base\UIUtil.cs" />
-    <Compile Include="UI\UIMainWindow.cs" />
     <Compile Include="Utils\Log.cs" />
     <Compile Include="Wrappers\NetToolWrapper.cs" />
   </ItemGroup>
