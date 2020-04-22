@@ -9,8 +9,9 @@ namespace QuayUpgradeTool.Detours
     // ReSharper disable once UnusedMember.Global
     public class QuayAIDetour : NetAI
     {
+
         /// <summary>
-        /// <see cref="https://github.com/bloodypenguin/Skylines-QuayAnarchy/blob/master/QuayAnarchy/Detours/QuayAIDetour.cs"/>
+        /// This detour is only used to prevent <see cref="ToolBase.ToolErrors.InvalidShape"/> errors during upgrade.
         /// </summary>
         /// <param name="test"></param>
         /// <param name="visualize"></param>
@@ -30,15 +31,7 @@ namespace QuayUpgradeTool.Detours
             var toolErrors = base.CheckBuildPosition(test, visualize, overlay, autofix, ref startPoint, ref middlePoint, ref endPoint, out ownerBuilding, out ownerPosition, out ownerDirection, out productionRate);
 
             // HACK - we remove InvalidShape ToolError error to allow updates
-            return toolErrors & ~ToolBase.ToolErrors.InvalidShape;
+            return Singleton<QuayUpgradeTool>.instance.IsToolActive ? toolErrors & ~ToolBase.ToolErrors.InvalidShape : toolErrors;
         }
-
-        //[RedirectMethod]
-        //public override NetInfo GetInfo(float minElevation, float maxElevation, float length, bool incoming, bool outgoing, bool curved, bool enableDouble, ref ToolBase.ToolErrors errors)
-        //{
-        //    //begin mod
-        //    //end mod
-        //    return this.m_info;
-        //}
     }
 }

@@ -12,6 +12,9 @@ namespace QuayUpgradeTool
     public class QuayUpgradeTool : ToolBase
     {
         private readonly object _lock = new object();
+
+        public bool IsToolActive => _canUpdate && ToolsModifierControl.toolController.CurrentTool is NetTool;
+
         private bool _canUpdate;
         private bool _isBeautificationOn;
         private UIComponent _quayOptionsPanel;
@@ -190,8 +193,7 @@ namespace QuayUpgradeTool
 
         protected override void OnToolGUI(Event e)
         {
-            if (!_canUpdate
-                || !(ToolsModifierControl.toolController.CurrentTool is NetTool) 
+            if (!IsToolActive
                 || e.type != EventType.MouseDown 
                 || e.button != 1 
                 || _currentSegmentId == 0) return;
