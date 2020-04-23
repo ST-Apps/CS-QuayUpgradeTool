@@ -1,9 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuayUpgradeTool", "QuayUpgradeTool.csproj", "{C323E306-D11E-48A7-9620-121E4ADC4765}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{FC5AA480-3E96-49E1-9F92-17B44CFFD866}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workshop", "Workshop", "{237028C7-00F6-4A95-B8F3-B6CB895FF412}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Beta", "Beta", "{ED14D6B5-737B-4DCA-B089-44E9A42021E0}"
+	ProjectSection(SolutionItems) = preProject
+		..\Docs\workshop\Beta\description.txt = ..\Docs\workshop\Beta\description.txt
+		..\Docs\workshop\Beta\PreviewImage.png = ..\Docs\workshop\Beta\PreviewImage.png
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +28,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{237028C7-00F6-4A95-B8F3-B6CB895FF412} = {FC5AA480-3E96-49E1-9F92-17B44CFFD866}
+		{ED14D6B5-737B-4DCA-B089-44E9A42021E0} = {237028C7-00F6-4A95-B8F3-B6CB895FF412}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {387C3D70-3782-4937-B56D-205937C0E3D4}
 	EndGlobalSection
 EndGlobal

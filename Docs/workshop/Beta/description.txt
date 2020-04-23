@@ -1,0 +1,56 @@
+﻿[h1][b][BETA] Quay Upgrade Tool[/b][/h1]
+allows you to upgrade your quays like you do with roads.
+Main features are:
+[list]
+[*] Change your quays with a simple click, no need to rebuild the entire segment
+[*] Reverse quay direction, useful for when the game places your quay with the terrain on the wrong side
+[/list]
+
+[quote]
+[h1][b]The beta version is meant for testing only and it can be unstable.[/b][/h1]
+[b]Tested on C:S version 1.13.0-f8[/b]
+[/quote]
+
+[quote]
+[h1]Current version: [b]0.1.0-rewrite-ui[/b], [url=https://github.com/ST-Apps/CS-QuayUpgradeTool/tree/rewrite-ui]Source code[/url][/h1]
+[list]
+[*] First public beta release
+[/list]
+[/quote]
+
+[quote]
+[h1]Support my work[/h1]
+Star the project on GitHub:
+
+[url=https://github.com/ST-Apps/CS-QuayUpgradeTool][img]https://i.imgur.com/zejzAZn.png[/img][/url] 
+
+[b]or[/b]
+
+Donate using PayPal:
+
+[url=paypal.me/STApps][img]https://i.imgur.com/HKFbi4p.jpg[/img][/url]
+[/quote] 
+
+[quote]
+[h1]Known limitations/issues[/h1] 
+[list] 
+[*] Reversing direction sometimes gives an exception. The exception is harmless, but you can't reverse that segment. Try deleting and recreating it.
+[*] Upgrade button doesn't look like it's selected (missing the blue background) but it's actually enabled.
+[/list]
+[/quote]
+
+[quote]
+[h1]Source code[/h1]
+[url=https://github.com/ST-Apps/CS-QuayUpgradeTool]GitHub[/url]
+[/quote]
+
+[quote]
+[h1]How to contribute[/h1]
+If you find an issue, please search [url=https://github.com/ST-Apps/CS-QuayUpgradeTool/issues]here[/url] to see if someone already reported it and, eventually, comment on the already reported one.
+
+If you can't find any issue similar to yours, please click [url=https://github.com/ST-Apps/CS-QuayUpgradeTool/issues/new]here[/url] and provide all the informations that you can (screenshots and logs are welcome).
+
+If you're interested in helping with development, choose an issue and ask to be assigned. I'll create a branch for that issue and you'll be able to work there.
+
+If there's no issue for the thing you'd like to work on, feel free to open a new one.
+[/quote]
