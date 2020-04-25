@@ -35,7 +35,6 @@ Donate using PayPal:
 [h1]Known limitations/issues[/h1] 
 [list] 
 [*] Reversing direction sometimes gives an exception. The exception is harmless, but you can't reverse that segment. Try deleting and recreating it.
-[*] Upgrade button doesn't look like it's selected (missing the blue background) but it's actually enabled.
 [/list]
 [/quote]
 

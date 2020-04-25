@@ -204,14 +204,14 @@ namespace QuayUpgradeTool.UI.Base
         public static void SetTextures(UIButton button, string spriteName, string toolTip)
         {
             button.name = "QUT_" + spriteName;
-            button.atlas = TextureAtlas;
+            button.atlas ??= TextureAtlas;
             button.tooltip = toolTip;
 
             button.normalBgSprite = "OptionBase";
             button.hoveredBgSprite = "OptionBaseHovered";
             button.pressedBgSprite = "OptionBasePressed";
             button.disabledBgSprite = "OptionBaseDisabled";
-            button.focusedBgSprite = "OptionsBaseFocused";
+            button.focusedBgSprite = "OptionBaseFocused";
 
             button.normalFgSprite = spriteName;
             button.hoveredFgSprite = spriteName + "Hovered";
