@@ -13,13 +13,13 @@ namespace QuayUpgradeTool
     {
         private readonly object _lock = new object();
 
-        public bool IsToolActive => _canUpdate && ToolsModifierControl.toolController.CurrentTool is NetTool;
-
         private bool _canUpdate;
         private bool _isBeautificationOn;
         private UIComponent _quayOptionsPanel;
         private UITabstrip _toolModeBar;
         private UIButton _toolToggleButton;
+
+        public bool IsToolActive => _canUpdate && ToolsModifierControl.toolController.CurrentTool is NetTool;
 
         #region Handlers
 
@@ -147,8 +147,15 @@ namespace QuayUpgradeTool
             base.SimulationStep();
 
             var currentInfo = ToolsModifierControl.GetTool<NetTool>().m_prefab;
-            if (currentInfo == null)
+
+            if (currentInfo == null || !(currentInfo.m_netAI is QuayAI))
+            {
+                // Prevent executing when we're not in Quay mode
+                Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(SimulationStep)}] Skipping because segment is not a quay ({currentInfo?.m_netAI})");
+
+                _canUpdate = false;
                 return;
+            }
 
             var input = new RaycastInput(m_mouseRay, m_mouseRayLength)
             {
@@ -159,18 +166,14 @@ namespace QuayUpgradeTool
                 m_ignoreNodeFlags = NetNode.Flags.All,
                 m_ignoreSegmentFlags = NetSegment.Flags.Untouchable
             };
-            switch (Singleton<InfoManager>.instance.CurrentMode)
-            {
-                case InfoManager.InfoMode.Transport:
-                case InfoManager.InfoMode.Traffic:
-                case InfoManager.InfoMode.TrafficRoutes:
-                case InfoManager.InfoMode.Tours:
-                case InfoManager.InfoMode.Underground
-                    when Singleton<InfoManager>.instance.CurrentSubMode == InfoManager.SubInfoMode.Default:
 
-                    input.m_netService.m_itemLayers |= ItemClass.Layer.MetroTunnels;
-                    break;
-            }
+            if (Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Transport ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Traffic ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.TrafficRoutes ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Tours ||
+                Singleton<InfoManager>.instance.CurrentMode == InfoManager.InfoMode.Underground &&
+                Singleton<InfoManager>.instance.CurrentSubMode == InfoManager.SubInfoMode.Default)
+                input.m_netService.m_itemLayers |= ItemClass.Layer.MetroTunnels;
 
             if (!m_mouseRayValid || !RayCast(input, out var output))
             {
@@ -179,23 +182,27 @@ namespace QuayUpgradeTool
                 return;
             }
 
-            var secondarySegment = DefaultTool.FindSecondarySegment(output.m_netSegment);
+            if (output.m_netSegment == _currentSegmentId)
+            {
+                // Same segment as before, no need to go on
+                return;
+            }
+
             _currentSegmentId = output.m_netSegment;
 
             if (_currentSegmentId == 0)
-                _currentSegmentId = secondarySegment;
+                _currentSegmentId = DefaultTool.FindSecondarySegment(output.m_netSegment);
 
             _canUpdate = true;
 
-            Log._Debug(
-                $"[{nameof(QuayUpgradeTool)}.{nameof(SimulationStep)}] Raycast detected a new segment with id {_currentSegmentId} ({nameof(secondarySegment)} is {secondarySegment})");
+            Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(SimulationStep)}] Ray-cast detected a new segment with id {_currentSegmentId}");
         }
 
         protected override void OnToolGUI(Event e)
         {
             if (!IsToolActive
-                || e.type != EventType.MouseDown 
-                || e.button != 1 
+                || e.type != EventType.MouseDown
+                || e.button != 1
                 || _currentSegmentId == 0) return;
 
             try
@@ -232,12 +239,12 @@ namespace QuayUpgradeTool
                     NetManager.instance.UpdateSegment(newSegmentId);
                 }
 
-                Log._Debug(
+                Log.Info(
                     $"[{nameof(QuayUpgradeTool)}.{nameof(OnToolGUI)}] Inverted segment {_currentSegmentId} ({nameof(invert)} is {invert})");
             }
             catch (Exception ex)
             {
-                Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolGUI)}] Failed for segment {_currentSegmentId}");
+                Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(OnToolGUI)}] Failed for segment {_currentSegmentId}");
                 Log.Exception(ex);
             }
         }
