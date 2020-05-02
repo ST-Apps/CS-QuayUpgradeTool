@@ -194,6 +194,7 @@ namespace QuayUpgradeTool
             if (output.m_netSegment == _currentSegmentId)
             {
                 // Same segment as before, no need to go on
+                _canUpdate = true;
                 return;
             }
 
