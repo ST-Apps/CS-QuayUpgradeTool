@@ -21,6 +21,8 @@ namespace QuayUpgradeTool
 
         public bool IsToolActive => _canUpdate && ToolsModifierControl.toolController.CurrentTool is NetTool;
 
+        public static bool IsInGameMode { get; set; }
+
         #region Handlers
 
         private void _toolModeBar_eventSelectedIndexChanged(UIComponent component, int value)
@@ -37,6 +39,13 @@ namespace QuayUpgradeTool
         {
             try
             {
+                if (!IsInGameMode)
+                {
+                    // Quays are not supported in map editor so we don't have to start
+                    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Current mode is not game, aborting...");
+                    return;
+                }
+
                 // Find NetTool and deploy
                 if (ToolsModifierControl.GetTool<NetTool>() == null)
                 {

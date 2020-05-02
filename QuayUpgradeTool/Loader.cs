@@ -10,6 +10,15 @@ namespace QuayUpgradeTool
     public class Loader : LoadingExtensionBase
     {
 
+        public override void OnCreated(ILoading loading)
+
+        {
+
+            // Set current game mode, we can't load some stuff if we're not in game (e.g. Map Editor)
+            QuayUpgradeTool.IsInGameMode = loading.currentMode == AppMode.Game;
+
+        }
+
         public override void OnReleased()
         {
             Object.DestroyImmediate(Singleton<QuayUpgradeTool>.instance);
