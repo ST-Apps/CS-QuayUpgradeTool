@@ -232,21 +232,23 @@ namespace QuayUpgradeTool
                 {
                     // If invert is false, we only need to set it to true to reverse segment's direction ...
                     NetManager.instance.m_segments.m_buffer[_currentSegmentId].m_flags |= NetSegment.Flags.Invert;
-                    NetManager.instance.UpdateSegment(_currentSegmentId);
+                    Singleton<SimulationManager>.instance.AddAction(() =>
+                    {
+                        NetManager.instance.UpdateSegment(_currentSegmentId);
+                    });
                 }
                 else
                 {
                     // ...however it doesn't work the other way around. If invert is true and we set it to false, it'll still be true.
                     // This means that we're forced to redraw the segment from scratch, reversing directions.
-                    NetManager.instance.ReleaseSegment(_currentSegmentId, true);
-                    NetManager.instance.CreateSegment(out var newSegmentId,
-                        ref Singleton<SimulationManager>.instance.m_randomizer,
-                        infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, true);
+                    Singleton<SimulationManager>.instance.AddAction(() =>
+                    {
+                        NetManager.instance.ReleaseSegment(_currentSegmentId, true);
 
-                    NetManager.instance.m_segments.m_buffer[newSegmentId].m_startDirection = startDirection;
-                    NetManager.instance.m_segments.m_buffer[newSegmentId].m_endDirection = endDirection;
-
-                    NetManager.instance.UpdateSegment(newSegmentId);
+                        NetManager.instance.CreateSegment(out _,
+                            ref Singleton<SimulationManager>.instance.m_randomizer,
+                            infos, startNode, endNode, startDirection, endDirection, buildIndex, modifiedIndex, true);
+                    });
                 }
 
                 Log.Info(
