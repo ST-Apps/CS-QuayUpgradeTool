@@ -4,7 +4,7 @@ namespace QuayUpgradeTool
 {
     public class ModInfo : IUserMod
     {
-        private const string Version = "0.2.0";
+        private const string Version = "0.2.1";
 #if DEBUG
         private const string Branch = "dev";
         public static readonly string ModName = $"[BETA] Quay Upgrade Tool {Version}-{Branch}";

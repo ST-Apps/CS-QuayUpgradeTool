@@ -20,6 +20,8 @@ namespace CSUtil.Commons
 
         private static readonly Stopwatch Sw = Stopwatch.StartNew();
 
+        private static string LastLoggedLine;
+
         static Log()
         {
             try
@@ -169,10 +171,16 @@ namespace CSUtil.Commons
                 {
                     var secs = Sw.ElapsedTicks / Stopwatch.Frequency;
                     var fraction = Sw.ElapsedTicks % Stopwatch.Frequency;
+
+                    // Prevent logging the same line multiple times
+                    if (LastLoggedLine == log) return;
+
                     w.WriteLine(
                                 $"[{level}] " +
                                 $"{secs:n0}.{fraction:D7}: " +
                                 $"{log}");
+
+                    LastLoggedLine = log;
 
                     if (level == LogLevel.Warning || level == LogLevel.Error)
                     {
