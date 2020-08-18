@@ -11,12 +11,9 @@ namespace QuayUpgradeTool
     {
 
         public override void OnCreated(ILoading loading)
-
         {
-
             // Set current game mode, we can't load some stuff if we're not in game (e.g. Map Editor)
-            QuayUpgradeTool.IsInGameMode = loading.currentMode == AppMode.Game;
-
+            QuayUpgradeToolController.IsInGameMode = loading.currentMode == AppMode.Game;
         }
 
         public override void OnReleased()
@@ -26,10 +23,8 @@ namespace QuayUpgradeTool
 
         public override void OnLevelLoaded(LoadMode mode)
         {
-            if (!Singleton<QuayUpgradeTool>.exists)
-                Singleton<QuayUpgradeTool>.Ensure();
-            else
-                Singleton<QuayUpgradeTool>.instance.Start();
+            if (!Singleton<QuayUpgradeToolController>.exists)
+                Singleton<QuayUpgradeToolController>.Ensure();
         }
     }
 }

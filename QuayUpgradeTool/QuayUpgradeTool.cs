@@ -1,132 +1,32 @@
 ﻿using System;
-using System.Linq;
 using ColossalFramework;
 using ColossalFramework.UI;
 using CSUtil.Commons;
 using QuayUpgradeTool.Redirection;
-using QuayUpgradeTool.UI.Base;
 using UnityEngine;
 
 namespace QuayUpgradeTool
 {
     public class QuayUpgradeTool : ToolBase
     {
-        private readonly object _lock = new object();
-
         private bool _canUpdate;
-        private bool _isBeautificationOn;
-        private UIComponent _quayOptionsPanel;
-        private UITabstrip _toolModeBar;
-        private UIButton _toolToggleButton;
 
         public bool IsToolActive => _canUpdate && ToolsModifierControl.toolController.CurrentTool is NetTool;
 
-        public static bool IsInGameMode { get; set; }
-
-        #region Handlers
-
-        private void _toolModeBar_eventSelectedIndexChanged(UIComponent component, int value)
-        {
-            Log._Debug(
-                $"[{nameof(QuayUpgradeTool)}.{nameof(_toolModeBar_eventSelectedIndexChanged)}] Selected index {value}");
-        }
-
-        #endregion
-
         #region Unity
 
-        public void Start()
+        protected override void OnEnable()
         {
-            try
-            {
-                if (!IsInGameMode)
-                {
-                    // Quays are not supported in map editor so we don't have to start
-                    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Current mode is not game, aborting...");
-                    return;
-                }
+            Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(OnEnable)}] Enabling redirects.");
 
-                // Find NetTool and deploy
-                if (ToolsModifierControl.GetTool<NetTool>() == null)
-                {
-                    Log.Warning($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Net Tool not found, can't deploy!");
-                    enabled = false;
-                    return;
-                }
-
-                Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Loading version: {ModInfo.ModName}");
-                Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Adding UI components");
-
-                var tsBar = UIUtil.FindComponent<UISlicedSprite>("TSBar", null, UIUtil.FindOptions.NameContains);
-                if (tsBar == null)
-                {
-                    Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Couldn't find TSBar, aborting...");
-                    return;
-                }
-
-                var optionsBar = UIUtil.FindComponent<UIPanel>("OptionsBar", tsBar, UIUtil.FindOptions.NameContains);
-                _quayOptionsPanel = optionsBar.Find<UIPanel>("QuaysOptionPanel");
-                _toolModeBar = _quayOptionsPanel.Find<UITabstrip>("ToolMode");
-
-                var modes = _quayOptionsPanel.GetComponent<OptionPanelBase>();
-                ((RoadsOptionPanel) modes).m_Modes =
-                    ((RoadsOptionPanel) modes).m_Modes.Union(new[] {NetTool.Mode.Upgrade}).ToArray();
-
-                _toolToggleButton = _toolModeBar.AddTab("Upgrade", false);
-                UIUtil.SetTextures(_toolToggleButton, "RoadOptionUpgrade", "Quay Upgrade Tool");
-
-                RedirectionUtil.Redirect();
-
-                Log.Info($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Loaded");
-            }
-            catch (Exception e)
-            {
-                Log._DebugOnlyError($"[{nameof(QuayUpgradeTool)}.{nameof(Start)}] Loading failed");
-                Log.Exception(e);
-
-                enabled = false;
-            }
+            RedirectionUtil.Redirect();
         }
 
-        protected override void OnDestroy()
+        protected override void OnDisable()
         {
+            Log._Debug($"[{nameof(QuayUpgradeTool)}.{nameof(OnEnable)}] Disabling redirects.");
+
             RedirectionUtil.RevertRedirects();
-
-            _toolModeBar.eventSelectedIndexChanged -= _toolModeBar_eventSelectedIndexChanged;
-            _isBeautificationOn = false;
-
-            DestroyImmediate(_quayOptionsPanel);
-            DestroyImmediate(_toolModeBar);
-            DestroyImmediate(_toolToggleButton);
-
-            _quayOptionsPanel = null;
-            _toolModeBar = null;
-            _toolToggleButton = null;
-        }
-
-        protected void Update()
-        {
-            if (_isBeautificationOn || !(ToolsModifierControl.toolController.CurrentTool is NetTool)) return;
-
-            // Check if a new panel was added
-            var optionsPanel = UIUtil.FindComponent<UIPanel>("QuaysOptionPanel(BeautificationPanel)", null,
-                UIUtil.FindOptions.NameContains);
-            if (optionsPanel == null) return;
-
-            lock (_lock)
-            {
-                if (_isBeautificationOn) return;
-
-                Log.Info(
-                    $"[{nameof(QuayUpgradeTool)}.{nameof(OnToolLateUpdate)}] Updating options panel with the new one...");
-
-                // Replace the previous one and rebuild the UI
-                _quayOptionsPanel = optionsPanel;
-                _toolModeBar = _quayOptionsPanel.Find<UITabstrip>("ToolMode");
-                _toolModeBar.eventSelectedIndexChanged += _toolModeBar_eventSelectedIndexChanged;
-
-                _isBeautificationOn = true;
-            }
         }
 
         #endregion
@@ -141,7 +41,7 @@ namespace QuayUpgradeTool
 
         protected override void OnToolLateUpdate()
         {
-            base.OnToolLateUpdate();
+            if (!enabled) return;
 
             m_mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
             m_mouseRayLength = Camera.main.farClipPlane;
@@ -153,6 +53,8 @@ namespace QuayUpgradeTool
 
         public override void SimulationStep()
         {
+            if (!enabled) return;
+
             base.SimulationStep();
 
             var currentInfo = ToolsModifierControl.GetTool<NetTool>().m_prefab;
@@ -210,6 +112,8 @@ namespace QuayUpgradeTool
 
         protected override void OnToolGUI(Event e)
         {
+            if (!enabled) return;
+
             if (!IsToolActive
                 || e.type != EventType.MouseDown
                 || e.button != 1

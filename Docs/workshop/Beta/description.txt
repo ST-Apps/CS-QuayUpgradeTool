@@ -12,7 +12,7 @@ Main features are:
 [/quote]
 
 [quote]
-[h1]Current version: [b]0.2.0-dev[/b], [url=https://github.com/ST-Apps/CS-QuayUpgradeTool/tree/rewrite-ui]Source code[/url][/h1]
+[h1]Current version: [b]0.3.0-dev[/b], [url=https://github.com/ST-Apps/CS-QuayUpgradeTool/tree/rewrite-ui]Source code[/url][/h1]
 [list]
 [*] First public beta release
 [/list]
